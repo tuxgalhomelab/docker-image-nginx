@@ -41,7 +41,5 @@ EXPOSE 8080
 STOPSIGNAL SIGQUIT
 
 USER $USER_NAME:$GROUP_NAME
-# WORKDIR /home/$USER_NAME
-
-# CMD ["/bin/bash"]
+WORKDIR /
 CMD ["nginx", "-g", "daemon off;"]
