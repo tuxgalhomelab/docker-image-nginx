@@ -9,7 +9,11 @@ ARGS_FILE="${repo_dir:?}/config/ARGS"
 NGINX_REPO="https://nginx.org/packages/debian/"
 NGINX_VERSION="1.20.2"
 NGINX_DEBIAN_RELEASE="bullseye"
-NGINX_MODULES="xslt geoip image-filter"
+NGINX_MODULES=""
+# Candidate modules are listed below:
+# NGINX_MODULES="xslt geoip image-filter perl"
+# There is also njs which uses a slightly different version format than the rest.
+# The list can be seen here: https://nginx.org/packages/mainline/debian/pool/nginx/n/
 
 nginx_src_repo() {
     echo -n "deb-src ${NGINX_REPO:?} ${NGINX_DEBIAN_RELEASE:?} nginx"
