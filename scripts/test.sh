@@ -12,9 +12,10 @@ container_name=$(random_container_name)
 echo "Starting ${container_type:?} container ${container_name:?} in the background ..."
 docker run \
     --name ${container_name:?} \
+    --detach \
     --rm \
     --publish 127.0.0.1:8082:8080 \
-    ${IMAGE:?} &
+    ${IMAGE:?}
 
 echo "Waiting for the ${container_type:?} container ${container_name:?} to finish starting up ..."
 sleep 10
