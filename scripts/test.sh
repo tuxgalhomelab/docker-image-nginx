@@ -19,7 +19,7 @@ docker run \
     --name ${container_name:?} \
     --detach \
     --rm \
-    --publish 127.0.0.1:8082:8080 \
+    --publish 127.0.0.1:8082:80 \
     ${IMAGE:?}
 
 echo "Waiting for the ${container_type:?} container ${container_name:?} to finish starting up ..."
