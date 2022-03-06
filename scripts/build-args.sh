@@ -21,9 +21,11 @@ nginx_src_repo() {
 
 nginx_packages() {
     echo -n "nginx=${NGINX_VERSION:?}-1~${NGINX_DEBIAN_RELEASE:?} "
-    for module in ${NGINX_MODULES:?}; do
-        echo -n "nginx-module-${module}=${NGINX_VERSION:?}-1~${NGINX_DEBIAN_RELEASE:?} "
-    done
+    if [[ "${NGINX_MODULES}" != "" ]]; then
+        for module in ${NGINX_MODULES:?}; do
+            echo -n "nginx-module-${module}=${NGINX_VERSION:?}-1~${NGINX_DEBIAN_RELEASE:?} "
+        done
+    fi
 }
 
 nginx_build_args() {
