@@ -9,6 +9,8 @@ ARG GROUP_NAME
 ARG USER_ID
 ARG GROUP_ID
 ARG NGINX_GPG_KEY
+ARG NGINX_GPG_KEY_PATH
+ARG NGINX_GPG_KEY_SERVER
 ARG NGINX_SRC_REPO
 ARG NGINX_PACKAGES
 
@@ -21,7 +23,7 @@ RUN \
         ${GROUP_NAME:?} \
         ${GROUP_ID:?} \
         --no-create-home-dir \
-    && homelab install-pkg-gpg-key ${NGINX_GPG_KEY:?} \
+    && homelab export-gpg-key "${NGINX_GPG_KEY_SERVER:?}" "${NGINX_GPG_KEY:?}" "${NGINX_GPG_KEY_PATH}" \
     && homelab install-pkg-from-deb-src "${NGINX_SRC_REPO:?}" "${NGINX_PACKAGES:?}" \
     && sed -i '/user  nginx;/d' /etc/nginx/nginx.conf \
     && sed -i 's,/var/run/nginx.pid,/tmp/nginx.pid,' /etc/nginx/nginx.conf \
