@@ -6,8 +6,8 @@ repo_dir="$(realpath "${script_parent_dir:?}/..")"
 
 ARGS_FILE="${repo_dir:?}/config/ARGS"
 
-NGINX_REPO="https://nginx.org/packages/mainline/debian/"
-NGINX_VERSION="1.25.3"
+NGINX_REPO="https://nginx.org/packages/debian/"
+NGINX_VERSION="1.24.0-1"
 NGINX_DEBIAN_RELEASE="bookworm"
 NGINX_MODULES=""
 GPG_KEY_PATH="/usr/share/keyrings/nginx-archive-keyring.gpg"
@@ -21,10 +21,10 @@ nginx_src_repo() {
 }
 
 nginx_packages() {
-    echo -n "nginx=${NGINX_VERSION:?}-1~${NGINX_DEBIAN_RELEASE:?} "
+    echo -n "nginx=${NGINX_VERSION:?}~${NGINX_DEBIAN_RELEASE:?} "
     if [[ "${NGINX_MODULES}" != "" ]]; then
         for module in ${NGINX_MODULES:?}; do
-            echo -n "nginx-module-${module}=${NGINX_VERSION:?}-1~${NGINX_DEBIAN_RELEASE:?} "
+            echo -n "nginx-module-${module}=${NGINX_VERSION:?}~${NGINX_DEBIAN_RELEASE:?} "
         done
     fi
 }
