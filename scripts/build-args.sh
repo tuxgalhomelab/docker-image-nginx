@@ -66,11 +66,17 @@ if [[ "$1" == "docker-flags" ]]; then
     args_file_as_build_args $1
     nginx_build_args $1
 else
-    # Convert the build args into a multi-line format
-    # that will be accepted by Github workflows.
     output=$(github_env_dump)
-    output="${output//'%'/'%25'}"
-    output="${output//$'\n'/'%0A'}"
-    output="${output//$'\r'/'%0D'}"
-    echo -e "::set-output name=build_args::$output"
+    if [ -n "${GITHUB_OUTPUT}" ]; then
+        echo "build_args<<EOF" >> ${GITHUB_OUTPUT:?}
+        echo "${output:?}" >> ${GITHUB_OUTPUT:?}
+        echo "EOF" >> ${GITHUB_OUTPUT:?}
+    else
+        # Convert the build args into a multi-line format
+        # that will be accepted by Github workflows.
+        output="${output//'%'/'%25'}"
+        output="${output//$'\n'/'%0A'}"
+        output="${output//$'\r'/'%0D'}"
+        echo -e "::set-output name=build_args::${output:?}"
+    fi
 fi
