@@ -9,6 +9,7 @@ ARG NGINX_VERSION
 ARG NGINX_RELEASE_SUFFIX
 ARG NGINX_MODULES
 
+# hadolint ignore=SC2086
 RUN \
     set -e -o pipefail \
     && homelab install util-linux patch quilt build-essential make cmake g++ \
