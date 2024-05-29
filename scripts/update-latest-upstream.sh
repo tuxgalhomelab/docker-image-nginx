@@ -31,7 +31,7 @@ nginx_hg_repo_latest_tag() {
     # Strip out any strings that begin with 'v' before identifying the highest semantic version.
     highest_sem_ver_tag=$(echo -e "${tags:?}" | sed -E s'#^v(.*)$#\1#g' | sed '/-/!{s/$/_/}' | sort --version-sort | sed 's/_$//'| tail -1)
     # Identify the correct tag for the semantic version of interest.
-    echo -e "${tags:?}" | grep "${highest_sem_ver_tag:?}$" | cut --delimiter='/' --fields=3
+    echo -e "${tags:?}" | grep -E "${highest_sem_ver_tag//./\\.}$" | cut --delimiter='/' --fields=3
 }
 
 get_config_arg() {
@@ -47,11 +47,11 @@ set_config_arg() {
 
 pkg="Nginx"
 repo_url="https://hg.nginx.org/pkg-oss"
-config_key_main="NGINX_VERSION"
-config_key_suffix="NGINX_RELEASE_SUFFIX"
+config_ver_key_main="NGINX_VERSION"
+config_ver_key_suffix="NGINX_RELEASE_SUFFIX"
 
-existing_upstream_ver_main=$(get_config_arg ${config_key_main:?})
-existing_upstream_ver_suffix=$(get_config_arg ${config_key_suffix:?})
+existing_upstream_ver_main=$(get_config_arg ${config_ver_key_main:?})
+existing_upstream_ver_suffix=$(get_config_arg ${config_ver_key_suffix:?})
 existing_upstream_ver="${existing_upstream_ver_main:?}-${existing_upstream_ver_suffix:?}"
 latest_upstream_ver=$(nginx_hg_repo_latest_tag ${repo_url:?})
 
@@ -61,8 +61,10 @@ else
     latest_upstream_ver_main=$(echo ${latest_upstream_ver:?} | cut --delimiter='-' --fields=1)
     latest_upstream_ver_suffix=$(echo ${latest_upstream_ver:?} | cut --delimiter='-' --fields=2)
     echo "Updating ${pkg:?} '${existing_upstream_ver:?}' -> '${latest_upstream_ver:?}'"
-    echo "Updating ${config_key_main:?} '${existing_upstream_ver_main:?}' -> '${latest_upstream_ver_main:?}'"
-    echo "Updating ${config_key_suffix:?} '${existing_upstream_ver_suffix:?}' -> '${latest_upstream_ver_suffix:?}'"
-    set_config_arg "${config_key_main:?}" "${latest_upstream_ver_main:?}"
-    set_config_arg "${config_key_suffix:?}" "${latest_upstream_ver_suffix:?}"
+    echo "Updating ${config_ver_key_main:?} '${existing_upstream_ver_main:?}' -> '${latest_upstream_ver_main:?}'"
+    echo "Updating ${config_ver_key_suffix:?} '${existing_upstream_ver_suffix:?}' -> '${latest_upstream_ver_suffix:?}'"
+    set_config_arg "${config_ver_key_main:?}" "${latest_upstream_ver_main:?}"
+    set_config_arg "${config_ver_key_suffix:?}" "${latest_upstream_ver_suffix:?}"
+    git add ${ARGS_FILE:?}
+    git commit -m "feat: Bump upstream ${pkg:?} version to ${latest_upstream_ver:?}."
 fi
