@@ -7,31 +7,14 @@ git_repo_dir="$(realpath "${script_parent_dir:?}/..")"
 
 ARGS_FILE="${git_repo_dir:?}/config/ARGS"
 
-grep_cookie() {
-    output="${1:?}"
-    cookie="${2:?}"
-    echo -e "${output:?}" | grep "document.cookie=\"${cookie:?}="  | sed -E 's#^.*"'"${cookie:?}"'=([^;]+);.*$#\1#g'
-}
-
-nginx_hg_repo_get_all_tags() {
-    hg_repo="${1:?}"
-
-    cookie_output=$(curl --silent --location ${hg_repo:?}/raw-tags)
-    tc_cookie=$(grep_cookie "${cookie_output:?}" "tc")
-    tce_cookie=$(grep_cookie "${cookie_output:?}" "tce")
-
-    # Only return tags that start with a number.
-    curl --silent --location -H "Cookie: tc=${tc_cookie:?}; tce=${tce_cookie:?}" ${hg_repo:?}/raw-tags | cut --delimiter=$'\t' --fields=1 | grep -P '^\d+.*$'
-}
-
-nginx_hg_repo_latest_tag() {
-    hg_repo="${1:?}"
-    tags="$(nginx_hg_repo_get_all_tags ${hg_repo:?})"
-
-    # Strip out any strings that begin with 'v' before identifying the highest semantic version.
-    highest_sem_ver_tag=$(echo -e "${tags:?}" | sed -E s'#^v(.*)$#\1#g' | sed '/-/!{s/$/_/}' | sort --version-sort | sed 's/_$//'| tail -1)
-    # Identify the correct tag for the semantic version of interest.
-    echo -e "${tags:?}" | grep -E "${highest_sem_ver_tag//./\\.}$" | cut --delimiter='/' --fields=3
+nginx_deb_repo_latest_ver() {
+    gpg_key_server=$(get_config_arg "NGINX_GPG_KEY_SERVER")
+    gpg_key=$(get_config_arg "NGINX_GPG_KEY")
+    gpg_key_path="$(get_config_arg "NGINX_GPG_KEY_PATH")"
+    nginx_repo=$(get_config_arg "NGINX_REPO")
+    nginx_release_distro=$(get_config_arg "NGINX_RELEASE_DISTRO")
+    base_image=$(get_config_arg "BASE_IMAGE_NAME"):$(get_config_arg "BASE_IMAGE_TAG")
+    docker run --rm ${base_image:?} sh -c "homelab export-gpg-key ${gpg_key_server:?} ${gpg_key:?} ${gpg_key_path:?} >/dev/null 2>&1 && echo 'deb-src [signed-by=${gpg_key_path:?}] ${nginx_repo:?} ${nginx_release_distro:?} nginx' > /etc/apt/sources.list.d/src_nginx.list && rm /etc/apt/sources.list.d/debian.sources && apt-get -qq update >/dev/null 2>&1 && (apt-cache madison nginx | cut -d '|' -f 2 | cut -d ' ' -f 2 | sort --version-sort --reverse | head -1 | sed -E 's/^(.+)~${nginx_release_distro:?}$/\1/g')"
 }
 
 get_config_arg() {
@@ -46,14 +29,13 @@ set_config_arg() {
 }
 
 pkg="Nginx"
-repo_url="https://hg.nginx.org/pkg-oss"
 config_ver_key_main="NGINX_VERSION"
 config_ver_key_suffix="NGINX_RELEASE_SUFFIX"
 
 existing_upstream_ver_main=$(get_config_arg ${config_ver_key_main:?})
 existing_upstream_ver_suffix=$(get_config_arg ${config_ver_key_suffix:?})
 existing_upstream_ver="${existing_upstream_ver_main:?}-${existing_upstream_ver_suffix:?}"
-latest_upstream_ver=$(nginx_hg_repo_latest_tag ${repo_url:?})
+latest_upstream_ver=$(nginx_deb_repo_latest_ver)
 
 if [[ "${existing_upstream_ver:?}" == "${latest_upstream_ver:?}" ]]; then
     echo "Existing config is already up to date and pointing to the latest upstream ${pkg:?} version '${latest_upstream_ver:?}'"
