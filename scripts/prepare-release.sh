@@ -64,6 +64,7 @@ get_package_version() {
 
 pkg="Nginx"
 tag_pkg="nginx"
+config_arg_pkg_version="NGINX_VERSION"
 
 if [ -z "$1" ]; then
     # Generate the next semantic version number if version number is not supplied.
@@ -72,7 +73,7 @@ else
     # Use the supplied version number from the command line arg.
     rel_ver="${1:?}"
 fi
-pkg_ver="$(get_package_version NGINX_VERSION)"
+pkg_ver="$(get_package_version ${config_arg_pkg_version:?})"
 
 git branch temp-release
 git checkout temp-release
