@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Usage: prepare-release.sh v0.1.1 1.24.0-1
+# Usage:
+#   prepare-release.sh
+#   prepare-release.sh v0.1.1
 
 set -e -o pipefail
 
@@ -48,17 +50,36 @@ update_latest_version() {
     set_config_arg "${image_arg_prefix:?}_TAG" "${ver:?}"
 }
 
+get_latest_tag() {
+    git tag --list | sort --version-sort --reverse | head -1
+}
+
+get_next_semantic_ver() {
+    echo "${1:?}" | sed -E 's#^v([0-9]+)\.([0-9]+)\.([0-9]+)-.+$#v\1.\2.\3#g' | awk -F. -v OFS=. '{$NF += 1 ; print}'
+}
+
+get_package_version() {
+    get_config_arg "${1:?}"
+}
+
 pkg="Nginx"
 tag_pkg="nginx"
-rel_ver="${1:?}"
-pkg_ver="${2:?}"
+
+if [ -z "$1" ]; then
+    # Generate the next semantic version number if version number is not supplied.
+    rel_ver="$(get_next_semantic_ver $(get_latest_tag))"
+else
+    # Use the supplied version number from the command line arg.
+    rel_ver="${1:?}"
+fi
+pkg_ver="$(get_package_version NGINX_VERSION)"
 
 git branch temp-release
 git checkout temp-release
 update_latest_version BASE_IMAGE
 git add ${ARGS_FILE:?}
-git commit -m "feat: Prepare for ${rel_ver:?} release based off ${pkg:?} ${pkg_ver:?}"
+git commit -m "feat: Prepare for ${rel_ver:?} release based off ${pkg:?} ${pkg_ver:?}."
 echo "Creating tag ${rel_ver:?}-${tag_pkg}-${pkg_ver:?}"
-git githubtag -m "${rel_ver:?} release based off ${pkg:?} ${pkg_ver:?}" ${rel_ver:?}-${tag_pkg:?}-${pkg_ver:?}
+git githubtag -m "${rel_ver:?} release based off ${pkg:?} ${pkg_ver:?}." ${rel_ver:?}-${tag_pkg:?}-${pkg_ver:?}
 git checkout master
 git branch -D temp-release
