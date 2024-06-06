@@ -4,6 +4,8 @@ set -e -o pipefail
 # Add repo specific metadata here.
 
 PACKAGE_NAME="Nginx"
+RELEASE_PACKAGE_NAME="Nginx"
+RELEASE_TAG_PACKAGE_NAME="nginx"
 UPSTREAM_IMAGE_CONFIG_KEY_PREFIX="BASE_IMAGE"
 UPSTREAM_VERSION_MAIN_CONFIG_KEY="NGINX_VERSION"
 UPSTREAM_VERSION_SUFFIX_CONFIG_KEY="NGINX_RELEASE_SUFFIX"
@@ -35,6 +37,10 @@ update_latest_upstream_version() {
     set_config_arg "${UPSTREAM_VERSION_MAIN_CONFIG_KEY:?}" "${latest_ver_main:?}"
     set_config_arg "${UPSTREAM_VERSION_SUFFIX_CONFIG_KEY:?}" "${latest_ver_suffix:?}"
     git add ${ARGS_FILE:?}
+}
+
+package_current_release_version() {
+    current_upstream_version
 }
 
 test_start_container() {
