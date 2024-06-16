@@ -11,7 +11,7 @@ ARG NGINX_MODULES
 
 # hadolint ignore=SC2086
 RUN \
-    set -e -o pipefail \
+    set -E -e -o pipefail \
     && homelab install util-linux patch quilt build-essential make cmake g++ \
         git mercurial \
         lsb-release devscripts equivs debhelper \
@@ -68,7 +68,7 @@ ARG NGINX_GPG_KEY_PATH
 
 RUN \
     --mount=type=bind,target=/nginx-modules-build,from=builder,source=/nginx-modules-build \
-    set -e -o pipefail \
+    set -E -e -o pipefail \
     # Create the user and the group. \
     && homelab add-user \
         ${USER_NAME:?} \
