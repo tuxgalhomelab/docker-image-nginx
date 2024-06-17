@@ -2,6 +2,8 @@ ARG BASE_IMAGE_NAME
 ARG BASE_IMAGE_TAG
 FROM ${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG} AS builder
 
+COPY scripts/start-nginx.sh /scripts/
+
 SHELL ["/bin/bash", "-c"]
 
 ARG XSLSCRIPT_PL_SHA256_CHECKSUM
@@ -68,6 +70,7 @@ ARG NGINX_GPG_KEY_PATH
 
 RUN \
     --mount=type=bind,target=/nginx-modules-build,from=builder,source=/nginx-modules-build \
+    --mount=type=bind,target=/scripts,from=builder,source=/scripts \
     set -E -e -o pipefail \
     # Create the user and the group. \
     && homelab add-user \
@@ -90,9 +93,12 @@ RUN \
     && sed -i "/^http {/a \    proxy_temp_path /tmp/proxy_temp;\n    client_body_temp_path /tmp/client_temp;\n    fastcgi_temp_path /tmp/fastcgi_temp;\n    uwsgi_temp_path /tmp/uwsgi_temp;\n    scgi_temp_path /tmp/scgi_temp;\n" /etc/nginx/nginx.conf \
     && sed -i 's/#tcp_nopush     on;/tcp_nopush      on;\n    tcp_nodelay     on;/' /etc/nginx/nginx.conf \
     && sed -i 's/#gzip  on;/gzip  on;/' /etc/nginx/nginx.conf \
+    # Copy the start-nginx.sh script. \
+    && mkdir -p /opt/nginx \
+    && cp /scripts/start-nginx.sh /opt/nginx/ \
+    && ln -sf /opt/nginx/start-nginx.sh /opt/bin/start-nginx \
     # nginx user must own the cache and etc directory to write cache and tweak the nginx config \
-    && chown -R ${USER_NAME:?}:${GROUP_NAME:?} /var/cache/nginx \
-    && chown -R ${USER_NAME:?}:${GROUP_NAME:?} /etc/nginx \
+    && chown -R ${USER_NAME:?}:${GROUP_NAME:?} /var/cache/nginx /etc/nginx /opt/nginx /opt/bin/start-nginx \
     # Forward request and error logs to the docker logs collector. \
     && ln -sf /dev/stdout /var/log/nginx/access.log \
     && ln -sf /dev/stderr /var/log/nginx/error.log \
@@ -105,4 +111,4 @@ STOPSIGNAL SIGQUIT
 
 USER ${USER_NAME}:${GROUP_NAME}
 WORKDIR /
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["start-nginx"]
