@@ -28,7 +28,7 @@ latest_upstream_version() {
     local gpg_key_path="$(get_config_arg "NGINX_GPG_KEY_PATH")"
     local nginx_repo=$(get_config_arg "NGINX_REPO")
     local nginx_release_distro=$(get_config_arg "NGINX_RELEASE_DISTRO")
-    docker run --rm $(base_image_name) sh -c "homelab export-gpg-key ${gpg_key_server:?} ${gpg_key:?} ${gpg_key_path:?} >/dev/null 2>&1 && echo 'deb-src [signed-by=${gpg_key_path:?}] ${nginx_repo:?} ${nginx_release_distro:?} nginx' > /etc/apt/sources.list.d/src_nginx.list && rm /etc/apt/sources.list.d/debian.sources && apt-get -qq update >/dev/null 2>&1 && (apt-cache madison nginx | cut -d '|' -f 2 | cut -d ' ' -f 2 | sort --version-sort --reverse | head -1 | sed -E 's/^(.+)~${nginx_release_distro:?}$/\1/g')"
+    docker run --rm $(base_image_name) sh -c "homelab export-gpg-key ${gpg_key_server:?} ${gpg_key:?} ${gpg_key_path:?} >/dev/null 2>&1 && echo 'deb-src [signed-by=${gpg_key_path:?}] ${nginx_repo:?} ${nginx_release_distro:?} nginx' > /etc/apt/sources.list.d/src_nginx.list && rm /etc/apt/sources.list.d/debian.sources && apt-get -qq update >/dev/null 2>&1 && (apt-cache madison nginx | tr -s ' ' | cut -d '|' -f 2 | cut -d ' ' -f 2 | sort --version-sort --reverse | head -1 | sed -E 's/^(.+)~${nginx_release_distro:?}$/\1/g')"
 }
 
 update_latest_upstream_version() {
