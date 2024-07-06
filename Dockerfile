@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 ARG BASE_IMAGE_NAME
 ARG BASE_IMAGE_TAG
 FROM ${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG} AS builder
