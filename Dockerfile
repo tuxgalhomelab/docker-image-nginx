@@ -5,6 +5,8 @@ ARG BASE_IMAGE_TAG
 FROM ${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG} AS builder
 
 COPY scripts/start-nginx.sh /scripts/
+COPY config/nginx.conf /configs/
+COPY config/homelab_enabled_modules.conf /configs/
 
 SHELL ["/bin/bash", "-c"]
 
@@ -12,6 +14,8 @@ ARG XSLSCRIPT_PL_SHA256_CHECKSUM
 ARG NGINX_VERSION
 ARG NGINX_RELEASE_SUFFIX
 ARG NGINX_MODULES
+ARG NGINX_LUA_PROMETHEUS_VERSION
+ARG LUA_RESTY_CORE_VERSION
 
 # hadolint ignore=SC2086
 RUN \
@@ -35,6 +39,7 @@ RUN \
         /opt/bin/xslscript.pl \
         root \
         root \
+    # Build the nginx modules. \
     && mkdir -p /tmp/nginx-modules-build \
     && pushd /tmp/nginx-modules-build \
     && hg clone -r ${NGINX_VERSION:?}-${NGINX_RELEASE_SUFFIX:?} https://hg.nginx.org/pkg-oss/ \
@@ -50,7 +55,29 @@ RUN \
     && mkdir -p /nginx-modules-build \
     && mv /tmp/nginx-modules-build/*.deb /nginx-modules-build \
     && rm /nginx-modules-build/*dbg_*.deb \
-    && rm -rf /tmp/nginx-modules-build
+    && rm -rf /tmp/nginx-modules-build \
+    # Download the necessary prometheus metrics exporter lua files. \
+    && mkdir -p /nginx-lua-modules{,/prometheus,/resty-core} /tmp/nginx-lua-prometheus \
+    && git clone \
+        --quiet \
+        --depth 1 \
+        --branch ${NGINX_LUA_PROMETHEUS_VERSION:?} \
+        https://github.com/knyar/nginx-lua-prometheus \
+        /tmp/nginx-lua-prometheus \
+    && cp \
+        /tmp/nginx-lua-prometheus/prometheus{,_keys,_resty_counter}.lua \
+        /nginx-lua-modules/prometheus/ \
+    # Download the necessary openresty lua resty core lua files (a dependency \
+    # for the lua prometheus metrics exporter). \
+    && git clone \
+        --quiet \
+        --depth 1 \
+        --branch ${LUA_RESTY_CORE_VERSION:?} \
+        https://github.com/openresty/lua-resty-core \
+        /tmp/nginx-lua-resty-core \
+    && cp \
+        /tmp/nginx-lua-resty-core/lib/resty/core/*.lua \
+        /nginx-lua-modules/resty-core/
 
 ARG BASE_IMAGE_NAME
 ARG BASE_IMAGE_TAG
@@ -72,6 +99,8 @@ ARG NGINX_GPG_KEY_PATH
 
 RUN \
     --mount=type=bind,target=/nginx-modules-build,from=builder,source=/nginx-modules-build \
+    --mount=type=bind,target=/nginx-lua-modules,from=builder,source=/nginx-lua-modules \
+    --mount=type=bind,target=/configs,from=builder,source=/configs \
     --mount=type=bind,target=/scripts,from=builder,source=/scripts \
     set -E -e -o pipefail \
     # Create the user and the group. \
@@ -85,16 +114,21 @@ RUN \
         "${NGINX_GPG_KEY_SERVER:?}" \
         "${NGINX_GPG_KEY:?}" \
         "${NGINX_GPG_KEY_PATH:?}" \
+    # Install the nginx package using the deb files we built earlier. \
     && homelab install-pkg-from-deb-src \
         "deb-src [signed-by=${NGINX_GPG_KEY_PATH:?}] ${NGINX_REPO:?} ${NGINX_RELEASE_DISTRO:?} nginx" \
         "nginx=${NGINX_VERSION:?}-${NGINX_RELEASE_SUFFIX:?}~${NGINX_RELEASE_DISTRO:?}" \
+    # Install the nginx module packages using the deb files we built earlier. \
     && homelab install /nginx-modules-build/*.deb \
-    && sed -i '/user  nginx;/d' /etc/nginx/nginx.conf \
-    && sed -i 's,/var/run/nginx.pid,/tmp/nginx.pid,' /etc/nginx/nginx.conf \
-    && sed -i '/^pid        \/tmp\/nginx.pid;/a include    /etc/nginx/modules-enabled/*.conf;' /etc/nginx/nginx.conf \
-    && sed -i "/^http {/a \    proxy_temp_path /tmp/proxy_temp;\n    client_body_temp_path /tmp/client_temp;\n    fastcgi_temp_path /tmp/fastcgi_temp;\n    uwsgi_temp_path /tmp/uwsgi_temp;\n    scgi_temp_path /tmp/scgi_temp;\n" /etc/nginx/nginx.conf \
-    && sed -i 's/#tcp_nopush     on;/tcp_nopush      on;\n    tcp_nodelay     on;/' /etc/nginx/nginx.conf \
-    && sed -i 's/#gzip  on;/gzip  on;/' /etc/nginx/nginx.conf \
+    # Delete the debug versions of the modules.\
+    && rm -f /etc/nginx/modules/*-debug.so \
+    # Copy the lua modules needed by the nginx lua prometheus metrics exporter. \
+    && mkdir -p /opt/lib/nginx-lua \
+    && cp -rf /nginx-lua-modules/* /opt/lib/nginx-lua \
+    && cp /configs/nginx.conf /etc/nginx/nginx.conf \
+    # Enable relevant nginx modules by default. \
+    && mkdir -p /etc/nginx/modules-enabled \
+    && cp /configs/homelab_enabled_modules.conf /etc/nginx/modules-enabled/ \
     # Copy the start-nginx.sh script. \
     && mkdir -p /opt/nginx \
     && cp /scripts/start-nginx.sh /opt/nginx/ \
@@ -109,6 +143,7 @@ RUN \
 
 EXPOSE 80
 
+ENV LUA_PATH="/opt/lib/nginx-lua/prometheus/?.lua;/opt/lib/nginx-lua/resty-core/?.lua;;"
 USER ${USER_NAME}:${GROUP_NAME}
 WORKDIR /
 
