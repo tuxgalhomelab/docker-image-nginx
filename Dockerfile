@@ -141,7 +141,7 @@ RUN \
     # Clean up. \
     && homelab cleanup
 
-EXPOSE 80
+EXPOSE 443
 
 ENV LUA_PATH="/opt/lib/nginx-lua/prometheus/?.lua;/opt/lib/nginx-lua/resty-core/?.lua;;"
 USER ${USER_NAME}:${GROUP_NAME}
