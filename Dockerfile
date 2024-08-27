@@ -58,23 +58,19 @@ RUN \
     && rm /nginx-modules-build/*dbg_*.deb \
     && rm -rf /tmp/nginx-modules-build \
     # Download the necessary prometheus metrics exporter lua files. \
-    && mkdir -p /nginx-lua-modules{,/prometheus,/resty-core} /tmp/nginx-lua-prometheus \
-    && git clone \
-        --quiet \
-        --depth 1 \
-        --branch ${NGINX_LUA_PROMETHEUS_VERSION:?} \
+    && mkdir -p /nginx-lua-modules{,/prometheus,/resty-core} \
+    && homelab download-git-repo \
         https://github.com/knyar/nginx-lua-prometheus \
+        ${NGINX_LUA_PROMETHEUS_VERSION:?} \
         /tmp/nginx-lua-prometheus \
     && cp \
         /tmp/nginx-lua-prometheus/prometheus{,_keys,_resty_counter}.lua \
         /nginx-lua-modules/prometheus/ \
     # Download the necessary openresty lua resty core lua files (a dependency \
     # for the lua prometheus metrics exporter). \
-    && git clone \
-        --quiet \
-        --depth 1 \
-        --branch ${LUA_RESTY_CORE_VERSION:?} \
+    && homelab download-git-repo \
         https://github.com/openresty/lua-resty-core \
+        ${LUA_RESTY_CORE_VERSION:?} \
         /tmp/nginx-lua-resty-core \
     && cp \
         /tmp/nginx-lua-resty-core/lib/resty/core/*.lua \
