@@ -20,6 +20,7 @@ ARG LUA_RESTY_CORE_VERSION
 # hadolint ignore=SC2086
 RUN \
     set -E -e -o pipefail \
+    && export HOMELAB_VERBOSE=y \
     && homelab install util-linux patch quilt build-essential make cmake g++ \
         git mercurial \
         lsb-release devscripts equivs debhelper \
@@ -103,6 +104,7 @@ RUN \
     --mount=type=bind,target=/configs,from=builder,source=/configs \
     --mount=type=bind,target=/scripts,from=builder,source=/scripts \
     set -E -e -o pipefail \
+    && export HOMELAB_VERBOSE=y \
     # Create the user and the group. \
     && homelab add-user \
         ${USER_NAME:?} \
