@@ -103,6 +103,32 @@ COPY config/homelab_enabled_modules.conf /configs/
 
 ARG BASE_IMAGE_NAME
 ARG BASE_IMAGE_TAG
+FROM ${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG} AS nginx-pkg-builder
+
+ARG NGINX_VERSION
+ARG NGINX_RELEASE_SUFFIX
+ARG NGINX_RELEASE_DISTRO
+ARG NGINX_REPO
+ARG NGINX_GPG_KEY
+ARG NGINX_GPG_KEY_SERVER
+ARG NGINX_GPG_KEY_PATH
+
+# hadolint ignore=SC3040
+RUN \
+    set -E -e -o pipefail \
+    && export HOMELAB_VERBOSE=y \
+    && homelab export-gpg-key \
+        "${NGINX_GPG_KEY_SERVER:?}" \
+        "${NGINX_GPG_KEY:?}" \
+        "${NGINX_GPG_KEY_PATH:?}" \
+    # Build the nginx package using the nginx sources repo. \
+    && homelab build-pkg-from-deb-src \
+        "deb-src [signed-by=${NGINX_GPG_KEY_PATH:?}] ${NGINX_REPO:?} ${NGINX_RELEASE_DISTRO:?} nginx" \
+        "nginx=${NGINX_VERSION:?}-${NGINX_RELEASE_SUFFIX:?}~${NGINX_RELEASE_DISTRO:?}" \
+        /nginx-pkg
+
+ARG BASE_IMAGE_NAME
+ARG BASE_IMAGE_TAG
 FROM ${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG}
 
 ARG USER_NAME
@@ -112,13 +138,10 @@ ARG GROUP_ID
 ARG NGINX_VERSION
 ARG NGINX_RELEASE_SUFFIX
 ARG NGINX_RELEASE_DISTRO
-ARG NGINX_REPO
-ARG NGINX_GPG_KEY
-ARG NGINX_GPG_KEY_SERVER
-ARG NGINX_GPG_KEY_PATH
 
 # hadolint ignore=DL4006,SC3040
 RUN \
+    --mount=type=bind,target=/nginx-pkg,from=nginx-pkg-builder,source=/nginx-pkg \
     --mount=type=bind,target=/modules/shard1,from=modules-builder-1,source=/modules-build \
     --mount=type=bind,target=/modules/shard2,from=modules-builder-2,source=/modules-build \
     --mount=type=bind,target=/modules/shard3,from=modules-builder-3,source=/modules-build \
@@ -137,13 +160,9 @@ RUN \
         ${GROUP_NAME:?} \
         ${GROUP_ID:?} \
         --no-create-home-dir \
-    && homelab export-gpg-key \
-        "${NGINX_GPG_KEY_SERVER:?}" \
-        "${NGINX_GPG_KEY:?}" \
-        "${NGINX_GPG_KEY_PATH:?}" \
-    # Build and install the nginx package using the nginx sources repo. \
-    && homelab install-pkg-from-deb-src \
-        "deb-src [signed-by=${NGINX_GPG_KEY_PATH:?}] ${NGINX_REPO:?} ${NGINX_RELEASE_DISTRO:?} nginx" \
+    # Install the nginx package from the locally built and configured repo. \
+    && homelab install-locally-built-deb-pkg \
+        /nginx-pkg \
         "nginx=${NGINX_VERSION:?}-${NGINX_RELEASE_SUFFIX:?}~${NGINX_RELEASE_DISTRO:?}" \
     # Install the nginx module packages using the deb files we built earlier. \
     && (find /modules -type f -iname '*.deb' -print0 | xargs -0 -r homelab install) \
