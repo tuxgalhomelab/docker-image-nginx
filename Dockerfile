@@ -13,7 +13,7 @@ ENV NGINX_RELEASE_SUFFIX="${NGINX_RELEASE_SUFFIX}"
 
 COPY scripts/build-nginx-modules.sh /scripts/
 
-# hadolint ignore=SC2086
+# hadolint ignore=SC2086,SC3044
 RUN \
     set -E -e -o pipefail \
     && export HOMELAB_VERBOSE=y \
@@ -117,7 +117,7 @@ ARG NGINX_GPG_KEY
 ARG NGINX_GPG_KEY_SERVER
 ARG NGINX_GPG_KEY_PATH
 
-# hadolint ignore=DL4006
+# hadolint ignore=DL4006,SC3040
 RUN \
     --mount=type=bind,target=/modules/shard1,from=modules-builder-1,source=/modules-build \
     --mount=type=bind,target=/modules/shard2,from=modules-builder-2,source=/modules-build \
