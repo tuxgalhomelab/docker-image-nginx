@@ -61,14 +61,6 @@ FROM modules-builder-base AS modules-builder-4
 ARG NGINX_MODULES_SHARD_4
 RUN /scripts/build-nginx-modules.sh "${NGINX_MODULES_SHARD_4:?}"
 
-FROM modules-builder-base AS modules-builder-5
-ARG NGINX_MODULES_SHARD_5
-RUN /scripts/build-nginx-modules.sh "${NGINX_MODULES_SHARD_5:?}"
-
-FROM modules-builder-base AS modules-builder-6
-ARG NGINX_MODULES_SHARD_6
-RUN /scripts/build-nginx-modules.sh "${NGINX_MODULES_SHARD_6:?}"
-
 FROM modules-builder-base AS lua-modules-builder
 ARG NGINX_LUA_PROMETHEUS_VERSION
 ARG LUA_RESTY_CORE_VERSION
@@ -146,8 +138,6 @@ RUN \
     --mount=type=bind,target=/modules/shard2,from=modules-builder-2,source=/modules-build \
     --mount=type=bind,target=/modules/shard3,from=modules-builder-3,source=/modules-build \
     --mount=type=bind,target=/modules/shard4,from=modules-builder-4,source=/modules-build \
-    --mount=type=bind,target=/modules/shard5,from=modules-builder-5,source=/modules-build \
-    --mount=type=bind,target=/modules/shard6,from=modules-builder-6,source=/modules-build \
     --mount=type=bind,target=/lua-modules,from=lua-modules-builder,source=/lua-modules \
     --mount=type=bind,target=/configs,from=configs-and-scripts,source=/configs \
     --mount=type=bind,target=/scripts,from=configs-and-scripts,source=/scripts \
