@@ -8,7 +8,6 @@ NGINX_VERSION=1.26.2
 NGINX_RELEASE_SUFFIX=1
 NGINX_RELEASE_DISTRO=bookworm
 NGINX_REPO=https://nginx.org/packages/debian/
-NGINX_MODULES=auth-spnego brotli encrypted-session fips-check geoip geoip2 headers-more image-filter lua ndk njs opentracing otel passenger perl rtmp set-misc subs-filter xslt
 NGINX_MODULES_SHARD_1=auth-spnego brotli encrypted-session fips-check geoip geoip2 headers-more
 NGINX_MODULES_SHARD_2=image-filter lua ndk njs
 NGINX_MODULES_SHARD_3=opentracing
